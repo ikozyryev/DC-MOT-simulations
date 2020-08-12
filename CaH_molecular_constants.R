@@ -19,26 +19,16 @@ mass=41*amu # CaH mass
 Isat2level=pi*h_Planck*c_light*Gamma_n/(3*lambda^3) # saturation intensity for a corresponding two level system
 # Isat2level=pi*h_Planck*c_light*Gamma_n/(3*lambda^3)
 
-
-
-# lambda=1060e-9 # [m]
-# tau=137e-9 # [s]
-# FCF00=0.987
-# Gamma_n=1/tau*FCF00# [1/s]
-# mass=139*amu # BaH
-# #Isat2level=pi*h_Planck*c_light*Gamma_n/(3*lambda^3) # saturation intensity for a corresponding two level system
-# Isat2level=pi*h_Planck*c_light*Gamma_n/(3*lambda^3)
-
 trans_dipole=sqrt(3*eps0*hbar*lambda^3/(8*tau*pi^2)) # calculate the value of the transition dipole moment
 
 # define the states to use
-#Xstates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0),c(1.5,1,-1),c(1.5,1,0),c(1.5,1,1),c(1.5,2,-2),c(1.5,2,-1),c(1.5,2,0),c(1.5,2,1),c(1.5,2,2))
-#Astates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0))
+Xstates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0),c(1.5,1,-1),c(1.5,1,0),c(1.5,1,1),c(1.5,2,-2),c(1.5,2,-1),c(1.5,2,0),c(1.5,2,1),c(1.5,2,2))
+Astates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0))
 # notice that for J=1/2 states we specify M_J projection and not M_F
-Xstates=rbind(c(0.5,1,-0.5),c(0.5,1,-0.5),c(0.5,1,0.5),c(0.5,0,0.5),c(1.5,1,-1),c(1.5,1,0),c(1.5,1,1),c(1.5,2,-2),c(1.5,2,-1),c(1.5,2,0),c(1.5,2,1),c(1.5,2,2))
+#Xstates=rbind(c(0.5,1,-0.5),c(0.5,1,-0.5),c(0.5,1,0.5),c(0.5,0,0.5),c(1.5,1,-1),c(1.5,1,0),c(1.5,1,1),c(1.5,2,-2),c(1.5,2,-1),c(1.5,2,0),c(1.5,2,1),c(1.5,2,2))
 
-# again here specify the M_J projection and not M_F
-Astates=rbind(c(0.5,1,-0.5),c(0.5,1,-0.5),c(0.5,1,0.5),c(0.5,0,0.5))
+# specify the M_J projection and not M_F
+#Astates=rbind(c(0.5,1,-0.5),c(0.5,1,-0.5),c(0.5,1,0.5),c(0.5,0,0.5))
 
 Is=pi*h_Planck*c_light*Gamma_n/(3*lambda^3)*0.1 # [mW/cm^2] saturation intensity for a corresponding 2-level system
 # print(Is) # for a corresponding two-level system
@@ -66,7 +56,7 @@ Xstate_split=-2*pi*c(0,53,1858+53,1857+53+102)*1e6 # CaH
 #   gl[i]=2*(Xstates[i,1]*(Xstates[i,1]+1)-1*2+0.5*1.5)*(Xstates[i,2]*(Xstates[i,2]+1)-0.5*1.5+Xstates[i,1]*(Xstates[i,1]+1))/(2*Xstates[i,1]*(Xstates[i,1]+1))/(2*Xstates[i,2]*(Xstates[i,2]+1))
 # }
 # gl[4]=0
-gl=c(-0.755,-0.0877,-0.718,0.048,0.8800,0.8800,0.8567,0.50058,0.4803,0.522,0.522,0.50058) # CaH X state emprical g-factors
+gl=c(-0.3775,0.3592,-0.35921,0,0.8800,0.8800,0.8567,0.50058,0.4803,0.522,0.522,0.50058) # CaH X state emprical g-factors
 #gu=c(-0.088,-0.088,-0.088,0) # upper hyperfine sublevels g-factors
 # gu=c(-0.51,-0.51,-0.51,-0.51) # BaH upper state g-factors
 gu=c(-0.021,-0.021,-0.021,0) # upper hyperfine sublevels g-factors for CaH calculated from data in Chen...Steimle, Brown PRA 73, 012502 (2006)

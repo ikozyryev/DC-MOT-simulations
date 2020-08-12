@@ -3,44 +3,39 @@
 
 options(digits=12) #set the number of digits
 ####### define experimental parameters ##########
-# molecule2use = "BaH"
 
 source('MOT_auxiliary_functions.R')
 
 if (molecule == "BaH"){
   # read in relevant functions and constants
-  source('20200121_BaH_MOT_constants.R')
+  source('BaH_molecular_constants.R')
 }
 
 if (molecule == "SrF"){
   # read in relevant functions and constants
-  source('20200121_SrF_MOT_constants.R')
+  source('SrF_molecular_constants.R')
 }
 
 
 if (molecule == "CaF"){
   # read in relevant functions and constants
-  source('20200121_CaF_MOT_constants.R')
+  source('CaF_molecular_constants.R')
 }
 
 if (molecule == "CaH"){
   # read in relevant functions and constants
-  source('20200121_CaH_MOT_constants.R')
+  source('CaH_molecular_constants.R')
 }
 
-file2save = paste(date2day,'_',molecule,'_',laser_power,'mW','_',B_field_gradient,'Gpercm','encode_polarization.txt',sep='')
-
-# load the libraries
-library(plotly)
-library(deSolve)
-library(ggplot2)
+file2save = paste(date2day,'_',molecule,'_',scan_type,'_',laser_power,'mW','_',B_field_grad,'Gpercm','encode_polarization.txt',sep='')
 
 t_step=0.01/Gamma_n
 
 # initialize the k-vector for laser beams
 # one can encode here angle dependence, etc.
 
-k_vec = c(0,0,1) # beams are coming from +z and -z directions
+# beams are coming from +z and -z directions
+k_vec = c(0,0,1) 
 
 # encode k-vector for +z
 for (i in 2:freq_number){ # starts from 2 since we bind one entry already
@@ -51,10 +46,22 @@ for (i in 1:freq_number){ # counter starts from 1 since we are appending to the 
   k_vec = rbind(k_vec,c(0,0,-1)) # initialize
 }
 
-#beam_nums=dim(k_vec)[1] # number of beams/freq from one direction
+beam_nums=2*freq_number # total number of laser beams involves
 P_laser=rep(laser_power*1e-3/freq_number,freq_number) # [W] laser power per frequency component; notice conversion from mW to W
 
 pol_vec = rbind(polarization_vector,polarization_vector) # to account for the fact that power comes from all sides
+
+# encode relative detunings now for all beams
+# beams are encoded by the way they are generated; refer to the associated writeup for further details
+rel_detun=c(set_detun[1]*Gamma_n+Xstate_split[2]+EOMfreq,
+            set_detun[2]*Gamma_n+Xstate_split[2],
+            set_detun[3]*Gamma_n+Xstate_split[2]-EOMfreq,
+            set_detun[4]*Gamma_n+Xstate_split[3],
+            set_detun[5]*Gamma_n+Xstate_split[3]-EOMfreq,
+            set_detun[6]*Gamma_n+Xstate_split[3]-2*EOMfreq,
+            set_detun[7]*Gamma_n+Xstate_split[1],
+            set_detun[8]*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
+
 
 # for config I
 # rel_detun=c(-1*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4]) 
@@ -71,7 +78,7 @@ pol_vec = rbind(polarization_vector,polarization_vector) # to account for the fa
 # delta_lup=laser_beam_detun10(Xstate_split,rel_detun)# import all the relative detunings
 #delta_lup=laser_beam_detun_10iii(Xstate_split,rel_detun)# import all the relative detunings
 
-EOMfreq=52*2*pi*1e6 # [MHz]
+
 # 7 laser beams total; refer to Tarbutt NJP paper for the diagram
 # relative detunings for 8 beams
 # rel_detun=c(-1*Gamma_n+Xstate_split[2]+EOMfreq,-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[2]-EOMfreq,2*Gamma_n+Xstate_split[3],2*Gamma_n+Xstate_split[3]-EOMfreq,2*Gamma_n+Xstate_split[3]-2*EOMfreq,-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
@@ -94,6 +101,7 @@ EOMfreq=52*2*pi*1e6 # [MHz]
 # gu=c(-0.51,-0.51,-0.51,0)
 #gu=rep(0,4)
 # delta_lup=laser_beam_detun14EOM(Xstate_split,rel_detun)# import all the relative detunings
+
 delta_lup=laser_beam_detun16EOM(Xstate_split,rel_detun)# import all the relative detunings
 
 Afield=B_field_grad*1e-2 # [T/m] 
@@ -106,9 +114,9 @@ t_steps_num=5000 # number of time steps
 #pol_vec_local=rep(NA,3) # for storing local laser polarization
 
 ##### Generic loop for calculating the rate equations
-parmax=20e-3 # max value of the parameter
+parmax=max_val # max value of the parameter
 #parvals=seq(-parmax,parmax,by=1) # parameter values for the loop iterations
-parvals=seq(0,parmax,by=0.5e-3)
+parvals=seq(0,parmax,by=step_size)
 parsteps=length(parvals) # number of steps to take
 # accelz_store=matrix(NA, nrow = t_steps_num, ncol = parsteps)
 ### store acceleration value and photons scattered
@@ -122,7 +130,7 @@ time_seq = (1:t_steps_num)*t_step
 
 pos=c(0,0,0) # the spatial potition to use
 # calculate the laser power at the specific position
-Ip=2*P_laser[1]/(pi*w^2)*exp(-2*(pos[1]^2+pos[2]^2)/w^2)
+Ip=2*P_laser[1]/(pi*beam_waist^2)*exp(-2*(pos[1]^2+pos[2]^2)/beam_waist^2)
 Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi frequency at that position
 #flup_satp=4*kij^2*Ip*trans_dipole^2/(hbar^2*c_light*eps0*Gamma_n^2)
 #sat_p=Ip/Isat2level
@@ -149,7 +157,6 @@ Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi f
     #(pos,vel,k_vec,pol_vec,delta_omega,deltalup_all,Rabi_ij)
     #Rlup_all=scattering_rate_matrix_2OMvec(pos,vel,k_vec,pol_vec,delta_omega,deltalup_all,Rabi_ij)
     
-    #### this part to be replaced by the RK4 functions
     init_vals = c(parvals[parcnt],0,as.matrix(num_X_init),as.matrix(num_A_init),0)
     #init_vals = c(1e-3,1,rep(1/16,16),0)
     #init_vals=sol[2,2:20]
@@ -168,22 +175,16 @@ Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi f
     Nl = sol[max_ind,4:15]
     Nu = sol[max_ind,16:19]
     accelz_store[parcnt] = calc_accel(Nl,Nu,Rlup_all,prefac)
+    # populations
+    Nlpops = sol[,4:15] 
+    Nu = sol[max_ind,16:19]
     #pos_final[parcnt] = sol[max_ind,2] # final position
     #vel_final[parcnt] = sol[max_ind,3] # final position
     #gamma_store[parcnt] = sol[max_ind,20] # final scattered photons
     #plot(sol[,1],sol[,2])
     
     #plot(sol[,1],sol[,3])
-    #dftot = data.frame('time_lab'=sol[,1],sol[,4:19])
-    #dftotsum = data.frame('time_lab'=sol[,1],'tot_sum'=apply(sol[,4:19],MARGIN=1,sum))
-    # dfexcited = data.frame('time_lab'=sol[,1],sol[,16:19])
-    
-    # ggplot(dftot,aes(time_lab)) + geom_line(aes(y=X3),size=2) + geom_line(aes(y=X4),size=2) + geom_line(aes(y=X5),size=2) + geom_line(aes(y=X6),size=2) +
-    #   geom_line(aes(y=X7),size=2) + geom_line(aes(y=X8),size=2) + geom_line(aes(y=X9),size=2) + geom_line(aes(y=X10),size=2) + geom_line(aes(y=X11),size=2) + geom_line(aes(y=X12),size=2) +
-    #   geom_line(aes(y=X13),size=2) + geom_line(aes(y=X14),size=2) + geom_line(aes(y=X15),col='blue',size=2) + geom_line(aes(y=X16),col='blue',size=2) + geom_line(aes(y=X17),col='blue',size=2) + geom_line(aes(y=X18),col='blue',size=2)
-    # 
-    # ggplot(dftotsum,aes(time_lab)) + geom_line(aes(y=tot_sum))
-    
+
     # for (i in 1:t_steps_num){
     #   Nldot=rep(0,dim(Xstates)[1])
     #   Nudot=rep(0,dim(Astates)[1])
@@ -218,10 +219,34 @@ Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi f
     ###########
   }
 
-if (res2save == T){
+if (save_results == T){
   data2save = data.frame(parvals*1e3,accelz_store*1e-3)
   write.table(data2save,file=file2save,row.names = F)
 }
+
+# plots the populations
+#Xstate_names = c('JhalfF1Mneg1','JhalfF1M0','JhalfF1M')
+#Xstates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0),c(1.5,1,-1),c(1.5,1,0),c(1.5,1,1),c(1.5,2,-2),c(1.5,2,-1),c(1.5,2,0),c(1.5,2,1),c(1.5,2,2))
+#Astates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0))
+
+if (plot_populations == T){
+  dftot = data.frame('time_lab'=sol[,1]*1e6,sol[,4:19])
+  dftotsum = data.frame('time_lab'=sol[,1],'tot_sum'=apply(sol[,4:19],MARGIN=1,sum))
+  dfexcited = data.frame('time_lab'=sol[,1],sol[,16:19])
+  
+  ggplot(dftot,aes(time_lab)) + geom_line(aes(y=X3),size=2) + geom_line(aes(y=X4),size=2) + geom_line(aes(y=X5),size=2) + geom_line(aes(y=X6),size=2) +
+    geom_line(aes(y=X7),size=2) + geom_line(aes(y=X8),size=2) + geom_line(aes(y=X9),size=2) + geom_line(aes(y=X10),size=2) + geom_line(aes(y=X11),size=2) + geom_line(aes(y=X12),size=2) +
+    geom_line(aes(y=X13),size=2) + geom_line(aes(y=X14),size=2) + geom_line(aes(y=X15),col='blue',size=2) + geom_line(aes(y=X16),col='blue',size=2) + geom_line(aes(y=X17),col='blue',size=2) + geom_line(aes(y=X18),col='blue',size=2) +
+    xlab("Time (microsec)") + ylab("Population fraction")
+}
+
+
+
+# ggplot(dftotsum,aes(time_lab)) + geom_line(aes(y=tot_sum))
+
+gamma_store = data.frame('time_lab'=sol[,1]*1e6,'photons' = sol[,20]) # scattered photons
+
+ggplot(gamma_store,aes(time_lab,photons)) + geom_line(size = 2) + xlab("Time (microsec)") + ylab("Scattered photons (#)")
   
 #}
 
@@ -229,5 +254,5 @@ if (res2save == T){
 plot(parvals*1e3,accelz_store*1e-3,col='blue',lwd=2,xlab="Position (mm)",ylab="Acceleration (km/s^2)",xlim=c(0,20))
 abline(h=0,lty=2,lwd=2)
 
-plot(parvals,pos_final,col='blue',lwd=2)
-plot(parvals,vel_final,col='green',type='l',lwd=2)
+#plot(parvals,pos_final,col='blue',lwd=2)
+#plot(parvals,vel_final,col='green',type='l',lwd=2)

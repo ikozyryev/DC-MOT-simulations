@@ -1,139 +1,75 @@
-# use rate equations to model magneto-optical trapping forces for BaH
-# following Tarbutt, NJP (2015)
+# use rate equations to model magneto-optical trapping forces for molecules
+# following Tarbutt, NJP 17, 015007 (2015)
 
-setwd("C:/Users/ikozy/Dropbox/work/calculations/BaH_NJP")
-options(digits=12) #set digits
-
+options(digits=12) #set the number of digits
 ####### define experimental parameters ##########
-date2day = "20200525"
 
-molecule2use = "CaH"
+source('MOT_auxiliary_functions.R')
 
-# molecule2use = "SrF"
-# molecule2use = "CaF"
-
-res2save = T # indicator whether to save the results to file
-
-source('20200121_BaH_MOT_functions.R')
-
-if (molecule2use == "BaH"){
+if (molecule == "BaH"){
   # read in relevant functions and constants
-  source('20200121_BaH_MOT_constants.R')
+  source('BaH_molecular_constants.R')
 }
 
-if (molecule2use == "SrF"){
+if (molecule == "SrF"){
   # read in relevant functions and constants
-  source('20200121_SrF_MOT_constants.R')
+  source('SrF_molecular_constants.R')
 }
 
 
-if (molecule2use == "CaF"){
+if (molecule == "CaF"){
   # read in relevant functions and constants
-  source('20200121_CaF_MOT_constants.R')
+  source('CaF_molecular_constants.R')
 }
 
-if (molecule2use == "CaH"){
+if (molecule == "CaH"){
   # read in relevant functions and constants
-  source('20200121_CaH_MOT_constants.R')
+  source('CaH_molecular_constants.R')
 }
 
-file2save = paste(date2day,'_',molecule2use,'_DC_250mW_tot_10Gpercm_1by2meppp3by2pppme_vel_scan.txt',sep='')
-
-# file2save = paste(molecule2use,'_DC_MOT_pppm_tot200mW_15Gpercm_12mm_zero_gu.txt',sep='')
-# file2save = paste(molecule2use,'_DC_dual_MOT_pmmpmp_inverted_vel_scan_tot200mW_15Gpercm_12mm_true_gl_true_gu_20200306_.txt',sep='')
+file2save = paste(date2day,'_',molecule,'_',scan_type,'_',laser_power,'mW','_',B_field_grad,'Gpercm','encode_polarization.txt',sep='')
 
 # load the libraries
 library(plotly)
 library(deSolve)
 library(ggplot2)
 
-w=12e-3 # [m] 1/e2 radius of the trapping beams used in the experiment
 t_step=0.01/Gamma_n
 
-# six laser beams from each direction because of the EOM 20 MHz splittings
+# initialize the k-vector for laser beams
+# one can encode here angle dependence, etc.
 
-# ignore angle effects
-#k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
-# for 4 beams from each direction
-# k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-#            c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
-# for 5 beams from each direction for congs II and III
-# k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-#             c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
+# beams are coming from +z and -z directions
+k_vec = c(0,0,1) 
 
-# for 3 beams from each direction
-# k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),
-#             c(0,0,-1),c(0,0,-1),c(0,0,-1))
+# encode k-vector for +z
+for (i in 2:freq_number){ # starts from 2 since we bind one entry already
+  k_vec = rbind(k_vec,c(0,0,1)) # initialize
+}
+# encode k-vectors for -z
+for (i in 1:freq_number){ # counter starts from 1 since we are appending to the existing list
+  k_vec = rbind(k_vec,c(0,0,-1)) # initialize
+}
 
-# for BaH dual
-# k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-#             c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
+beam_nums=2*freq_number # total number of laser beams involves
+P_laser=rep(laser_power*1e-3/freq_number,freq_number) # [W] laser power per frequency component; notice conversion from mW to W
 
-# for BaH dual
-# k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-#             c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
+pol_vec = rbind(polarization_vector,polarization_vector) # to account for the fact that power comes from all sides
 
-# for 8 beams from each direction
-k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-            c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
+# encode relative detunings now for all beams
+# beams are encoded by the way they are generated; refer to the associated writeup for further details
+rel_detun=c(set_detun[1]*Gamma_n+Xstate_split[2]+EOMfreq,
+            set_detun[2]*Gamma_n+Xstate_split[2],
+            set_detun[3]*Gamma_n+Xstate_split[2]-EOMfreq,
+            set_detun[4]*Gamma_n+Xstate_split[3],
+            set_detun[5]*Gamma_n+Xstate_split[3]-EOMfreq,
+            set_detun[6]*Gamma_n+Xstate_split[3]-2*EOMfreq,
+            set_detun[7]*Gamma_n+Xstate_split[1],
+            set_detun[8]*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
 
-# for 7 beams from each direction
-# k_vec=rbind(c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-#             c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1),c(0,0,-1))
 
-
-Ptot=250e-3 # [W] total laser power in the APi light
-
-beam_nums=dim(k_vec)[1] # number of beams/freq from one direction
-P_laser=rep(Ptot/beam_nums*2,dim(k_vec)[1]) # [W] laser power per frequency component, note that beam are rertoreflected (i.e. x2 factor)
-
-# beam_pols=c(1/2,1/sqrt(2),1/2) # polarization vector at 45 degree angle relative to the B-field
-# pol_vec=beam_pols
-# for (cnt in 2:beam_nums){
-#   pol_vec=rbind(pol_vec,beam_pols)
-# }
-
-###### set the polarizations now for different configurations refer to Fig. 8
-# correct polarizations here for config I
-# pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),
-#               c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1))
-# correct polarizations here for config I for BaH
-# pol_vec=rbind(c(1,0,0),c(1,0,0),c(0,0,1),
-#               c(1,0,0),c(1,0,0),c(0,0,1))
-# polarizations here for config II
-# pol_vec=rbind(c(1,0,0),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1),
-#               c(1,0,0),c(0,0,1),c(0,0,1),c(0,0,1),c(0,0,1))
-# polarizations here for config III
-# pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(1,0,0),
-#             c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(1,0,0))
-# wrong polarization here for checking
-# pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(1,0,0),c(0,0,1),
-#               c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(1,0,0),c(0,0,1))
-# for BaH dual
-# pol_vec=rbind(c(0,0,1),c(1,0,0),c(1,0,0),c(0,0,1),c(1,0,0),c(0,0,1),
-#               c(0,0,1),c(1,0,0),c(1,0,0),c(0,0,1),c(1,0,0),c(0,0,1))
-
-# for BaH dual
-# pol_vec=rbind(c(1,0,0),c(0,0,1),c(0,0,1),c(1,0,0),c(0,0,1),c(1,0,0),
-#               c(1,0,0),c(0,0,1),c(0,0,1),c(1,0,0),c(0,0,1),c(1,0,0))
-
-# for CaH with 8 beams: use EOM to adress both J''=1/2 and J''=3/2; add to extra beam to the upper manifold
-# pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(0,0,1),
-#               c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(0,0,1))
-
-# for CaH with 7 beams: use EOM to adress both J''=1/2 and J''=3/2; add one extra beam to the upper manifold
-# pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),
-#               c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1))
-
-# using Tarbutt DC MOT config added to J=1/2, F=1
-pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(0,0,1),
-              c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(0,0,1))
-
-# # for config I
-# rel_detun=c(-1*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4])
-
-# for config I for BaH with 3 beams only
-# rel_detun=c(-1*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4])
+# for config I
+# rel_detun=c(-1*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4]) 
 
 # for config II
 # rel_detun=c(-1*Gamma_n+Xstate_split[1],-2*Gamma_n+Xstate_split[1],-1.2*Gamma_n+Xstate_split[2],-1.2*Gamma_n+Xstate_split[3],-1.2*Gamma_n+Xstate_split[4]) 
@@ -141,17 +77,21 @@ pol_vec=rbind(c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(1,0,0),c(0,0,1),c(0
 # for config III
 # rel_detun=c(-1.2*Gamma_n+Xstate_split[1],-1.2*Gamma_n+Xstate_split[2],-1.2*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4],-2*Gamma_n+Xstate_split[4]) 
 
-# for BaH dual freq
-#rel_detun=c(2*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[1],2*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[3],2*Gamma_n+Xstate_split[4],-1*Gamma_n+Xstate_split[4]) 
+# 8 beams for config I
+# delta_lup=laser_beam_detun8(Xstate_split,rel_detun)# import all the relative detunings
+# 10 beams for configs II and III
+# delta_lup=laser_beam_detun10(Xstate_split,rel_detun)# import all the relative detunings
+#delta_lup=laser_beam_detun_10iii(Xstate_split,rel_detun)# import all the relative detunings
 
-EOMfreq=52*2*pi*1e6 # [MHz]
+
 # 7 laser beams total; refer to Tarbutt NJP paper for the diagram
-# for 8 beams
+# relative detunings for 8 beams
 # rel_detun=c(-1*Gamma_n+Xstate_split[2]+EOMfreq,-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[2]-EOMfreq,2*Gamma_n+Xstate_split[3],2*Gamma_n+Xstate_split[3]-EOMfreq,2*Gamma_n+Xstate_split[3]-2*EOMfreq,-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
-# for 7 beams
-# rel_detun=c(-1*Gamma_n+Xstate_split[2]+EOMfreq,-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[2]-EOMfreq,2*Gamma_n+Xstate_split[3],2*Gamma_n+Xstate_split[3]-EOMfreq,2*Gamma_n+Xstate_split[3]-2*EOMfreq,-1*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
 
-rel_detun=c(-1*Gamma_n+Xstate_split[2]+EOMfreq,-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[2]-EOMfreq,2*Gamma_n+Xstate_split[3],2*Gamma_n+Xstate_split[3]-EOMfreq,2*Gamma_n+Xstate_split[3]-2*EOMfreq,2*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
+
+
+# relative detunings for 7 beams
+# rel_detun=c(-1*Gamma_n+Xstate_split[2]+EOMfreq,-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[2]-EOMfreq,2*Gamma_n+Xstate_split[3],2*Gamma_n+Xstate_split[3]-EOMfreq,2*Gamma_n+Xstate_split[3]-2*EOMfreq,-1*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
 
 
 #plot(seq(1,10),rep(rel_detunMHz[1],10),ylim=c(-50,50),type='l',lwd=2,col='black')
@@ -166,29 +106,10 @@ rel_detun=c(-1*Gamma_n+Xstate_split[2]+EOMfreq,-1*Gamma_n+Xstate_split[2],-1*Gam
 # gu=c(-0.51,-0.51,-0.51,0)
 #gu=rep(0,4)
 # delta_lup=laser_beam_detun14EOM(Xstate_split,rel_detun)# import all the relative detunings
+
 delta_lup=laser_beam_detun16EOM(Xstate_split,rel_detun)# import all the relative detunings
 
-# 6 beams for config I
-#delta_lup=laser_beam_detun6(Xstate_split,rel_detun)# import all the relative detunings
-# 10 beams for configs II and III
-#delta_lup=laser_beam_detun12(Xstate_split,rel_detun)# import all the relative detunings
-#delta_lup=laser_beam_detun_10iii(Xstate_split,rel_detun)# import all the relative detunings
-
-# EOMfreq=20
-# rel_detunMHz=c(EOMfreq,0,-EOMfreq,-1*8642.8,-1*(8642.8+EOMfreq),-1*(8642.8+2*EOMfreq))# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
-#plot(seq(1,10),rep(rel_detunMHz[1],10),ylim=c(-50,50),type='l',lwd=2,col='black')
-#plot(seq(1,10),rep(rel_detunMHz[1],10),ylim=-1*c(8642.8-50,8642.8+50),type='l',lwd=2,col='black')
-#for (i in 2:length(rel_detunMHz)){
-  #abline(h=rel_detunMHz[i],lwd=2)
-#}
-# rel_detun=rel_detunMHz*2*pi*1e6
-# delta_lup=laser_beam_detun12(Xstate_split,rel_detun,EOMfreq) # import all the relative detunings
-# delta_lup=rep(0,6) # make sure the units are correct
-# initialize polarization vecotors for each laser beam with multiple frequencies
-# gu=c(-0.51,-0.51,-0.51,0)
-#gu=rep(0,4)
-
-Afield=10e-2 # [T/m] 
+Afield=B_field_grad*1e-2 # [T/m] 
 #Afield=0 #1e-4 # [T] B field constant
 
 t_steps_num=5000 # number of time steps
@@ -198,10 +119,11 @@ t_steps_num=5000 # number of time steps
 #pol_vec_local=rep(NA,3) # for storing local laser polarization
 
 ##### Generic loop for calculating the rate equations
-parmax=20 # max value of the parameter
+parmax=max_val # max value of the parameter
 #parvals=seq(-parmax,parmax,by=1) # parameter values for the loop iterations
-parvals=seq(0,parmax,by=0.5)
-parsteps=length(parvals) # number of steps to take
+parvals=seq(0,parmax,by=step_size)
+parsteps=length(parvals)
+
 # accelz_store=matrix(NA, nrow = t_steps_num, ncol = parsteps)
 ### store acceleration value and photons scattered
 accelz_store=rep(NA,parsteps)
@@ -214,7 +136,7 @@ time_seq = (1:t_steps_num)*t_step
 
 pos=c(0,0,0) # the spatial potition to use
 # calculate the laser power at the specific position
-Ip=2*P_laser[1]/(pi*w^2)*exp(-2*(pos[1]^2+pos[2]^2)/w^2)
+Ip=2*P_laser[1]/(pi*beam_waist^2)*exp(-2*(pos[1]^2+pos[2]^2)/beam_waist^2)
 Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi frequency at that position
 #flup_satp=4*kij^2*Ip*trans_dipole^2/(hbar^2*c_light*eps0*Gamma_n^2)
 #sat_p=Ip/Isat2level
