@@ -29,12 +29,7 @@ if (molecule == "CaH"){
 
 file2save = paste(date2day,'_',molecule,'_',scan_type,'_',laser_power,'mW','_',B_field_grad,'Gpercm','encode_polarization.txt',sep='')
 
-# load the libraries
-library(plotly)
-library(deSolve)
-library(ggplot2)
-
-t_step=0.01/Gamma_n
+t_step=0.01/Gamma_n # make sure that population dynammics look reasonable 
 
 # initialize the k-vector for laser beams
 # one can encode here angle dependence, etc.
@@ -51,7 +46,7 @@ for (i in 1:freq_number){ # counter starts from 1 since we are appending to the 
   k_vec = rbind(k_vec,c(0,0,-1)) # initialize
 }
 
-beam_nums=2*freq_number # total number of laser beams involves
+beam_nums=2*freq_number # total number of laser beams involved; assume beams are coming from both directions (i.e. x2)
 P_laser=rep(laser_power*1e-3/freq_number,freq_number) # [W] laser power per frequency component; notice conversion from mW to W
 
 pol_vec = rbind(polarization_vector,polarization_vector) # to account for the fact that power comes from all sides
@@ -67,6 +62,7 @@ rel_detun=c(set_detun[1]*Gamma_n+Xstate_split[2]+EOMfreq,
             set_detun[7]*Gamma_n+Xstate_split[1],
             set_detun[8]*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
 
+# below config I, II and III refer to Fig. 8 of Tarbutt, NJP 17, 015007 (2015) if you want to reproduce the results of Fig. 9 in the paper
 
 # for config I
 # rel_detun=c(-1*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4]) 

@@ -19,7 +19,7 @@ Isat2level=pi*h_Planck*c_light*Gamma_n/(3*lambda^3)
 
 trans_dipole=sqrt(3*eps0*hbar*lambda^3/(8*tau*pi^2)) # calculate the value of the transition dipole moment
 
-# define the states to use
+# define the states to use: |J,F,M_f>
 Xstates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0),c(1.5,1,-1),c(1.5,1,0),c(1.5,1,1),c(1.5,2,-2),c(1.5,2,-1),c(1.5,2,0),c(1.5,2,1),c(1.5,2,2))
 Astates=rbind(c(0.5,1,-1),c(0.5,1,0),c(0.5,1,1),c(0.5,0,0))
 

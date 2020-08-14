@@ -1,3 +1,20 @@
+# auxilliary function for running the simulations of MOTs
+configure_detunings <- function(freq_number,Xstate_split,rel_detun){
+  if (freq_number == 4){
+    return(laser_beam_detun8(Xstate_split,rel_detun))
+  }else if (freq_number == 5){
+    return(laser_beam_detun10(Xstate_split,rel_detun))
+  }else if (freq_number == 6){
+    return(laser_beam_detun12EOM(Xstate_split,rel_detun))
+  }else if (freq_number == 7){
+    return(laser_beam_detun14EOM(Xstate_split,rel_detun))
+  }else if (freq_number == 8){
+    return(laser_beam_detun16EOM(Xstate_split,rel_detun))
+  }else{
+    return(F)
+  }
+}
+
 # functions for SrF calculations
 laser_beam_detun <- function(Xstate_split,rel_detun){
   Xstate_detun=c(Xstate_split[1],Xstate_split[1],Xstate_split[1],Xstate_split[2],Xstate_split[3],Xstate_split[3],Xstate_split[3],Xstate_split[4],Xstate_split[4],Xstate_split[4],Xstate_split[4],Xstate_split[4])#
@@ -69,6 +86,7 @@ laser_beam_detun12 <- function(Xstate_split,rel_detun){
 }
 
 laser_beam_detun8 <- function(Xstate_split,rel_detun){
+  # there are a total of 12 ground MF states
   Xstate_detun=c(Xstate_split[1],Xstate_split[1],Xstate_split[1],Xstate_split[2],Xstate_split[3],Xstate_split[3],Xstate_split[3],Xstate_split[4],Xstate_split[4],Xstate_split[4],Xstate_split[4],Xstate_split[4])#
   delta_lup=cbind(rep(0,12),rep(0,12),rep(0,12),rep(0,12),rep(0,12),rep(0,12),rep(0,12),rep(0,12))
   delta_lup[,1]=rel_detun[1]-Xstate_detun 
@@ -108,6 +126,7 @@ laser_beam_detun10 <- function(Xstate_split,rel_detun){
   delta_lup[,3]=rel_detun[3]-Xstate_detun
   delta_lup[,4]=rel_detun[4]-Xstate_detun
   delta_lup[,5]=rel_detun[5]-Xstate_detun
+  
   delta_lup[,6]=rel_detun[1]-Xstate_detun
   delta_lup[,7]=rel_detun[2]-Xstate_detun
   delta_lup[,8]=rel_detun[3]-Xstate_detun

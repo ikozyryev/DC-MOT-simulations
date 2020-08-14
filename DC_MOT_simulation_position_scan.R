@@ -4,32 +4,7 @@
 options(digits=12) #set the number of digits
 ####### define experimental parameters ##########
 
-source('MOT_auxiliary_functions.R')
-
-if (molecule == "BaH"){
-  # read in relevant functions and constants
-  source('BaH_molecular_constants.R')
-}
-
-if (molecule == "SrF"){
-  # read in relevant functions and constants
-  source('SrF_molecular_constants.R')
-}
-
-
-if (molecule == "CaF"){
-  # read in relevant functions and constants
-  source('CaF_molecular_constants.R')
-}
-
-if (molecule == "CaH"){
-  # read in relevant functions and constants
-  source('CaH_molecular_constants.R')
-}
-
-file2save = paste(date2day,'_',molecule,'_',scan_type,'_',laser_power,'mW','_',B_field_grad,'Gpercm','encode_polarization.txt',sep='')
-
-t_step=0.01/Gamma_n
+file2save = paste(date2day,'_',molecule,'_',scan_type,'_',laser_power,'mW','_',B_field_grad,'Gpercm_',pol_encode,'.txt',sep='')
 
 # initialize the k-vector for laser beams
 # one can encode here angle dependence, etc.
@@ -53,31 +28,15 @@ pol_vec = rbind(polarization_vector,polarization_vector) # to account for the fa
 
 # encode relative detunings now for all beams
 # beams are encoded by the way they are generated; refer to the associated writeup for further details
-rel_detun=c(set_detun[1]*Gamma_n+Xstate_split[2]+EOMfreq,
-            set_detun[2]*Gamma_n+Xstate_split[2],
-            set_detun[3]*Gamma_n+Xstate_split[2]-EOMfreq,
-            set_detun[4]*Gamma_n+Xstate_split[3],
-            set_detun[5]*Gamma_n+Xstate_split[3]-EOMfreq,
-            set_detun[6]*Gamma_n+Xstate_split[3]-2*EOMfreq,
-            set_detun[7]*Gamma_n+Xstate_split[1],
-            set_detun[8]*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
-
-
-# for config I
-# rel_detun=c(-1*Gamma_n+Xstate_split[1],-1*Gamma_n+Xstate_split[2],-1*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4]) 
-
-# for config II
-# rel_detun=c(-1*Gamma_n+Xstate_split[1],-2*Gamma_n+Xstate_split[1],-1.2*Gamma_n+Xstate_split[2],-1.2*Gamma_n+Xstate_split[3],-1.2*Gamma_n+Xstate_split[4]) 
-
-# for config III
-# rel_detun=c(-1.2*Gamma_n+Xstate_split[1],-1.2*Gamma_n+Xstate_split[2],-1.2*Gamma_n+Xstate_split[3],-1*Gamma_n+Xstate_split[4],-2*Gamma_n+Xstate_split[4]) 
-
-# 8 beams for config I
-# delta_lup=laser_beam_detun8(Xstate_split,rel_detun)# import all the relative detunings
-# 10 beams for configs II and III
-# delta_lup=laser_beam_detun10(Xstate_split,rel_detun)# import all the relative detunings
-#delta_lup=laser_beam_detun_10iii(Xstate_split,rel_detun)# import all the relative detunings
-
+## TIP: use Ctrl+Shift+C to comment or uncomment a selected fraction
+# rel_detun=c(set_detun[1]*Gamma_n+Xstate_split[2]+EOMfreq,
+#             set_detun[2]*Gamma_n+Xstate_split[2],
+#             set_detun[3]*Gamma_n+Xstate_split[2]-EOMfreq,
+#             set_detun[4]*Gamma_n+Xstate_split[3],
+#             set_detun[5]*Gamma_n+Xstate_split[3]-EOMfreq,
+#             set_detun[6]*Gamma_n+Xstate_split[3]-2*EOMfreq,
+#             set_detun[7]*Gamma_n+Xstate_split[1],
+#             set_detun[8]*Gamma_n+Xstate_split[4])# #rep(0,beam_nums) #-1*Gamma_n # relative detuning for each state
 
 # 7 laser beams total; refer to Tarbutt NJP paper for the diagram
 # relative detunings for 8 beams
@@ -102,12 +61,10 @@ rel_detun=c(set_detun[1]*Gamma_n+Xstate_split[2]+EOMfreq,
 #gu=rep(0,4)
 # delta_lup=laser_beam_detun14EOM(Xstate_split,rel_detun)# import all the relative detunings
 
-delta_lup=laser_beam_detun16EOM(Xstate_split,rel_detun)# import all the relative detunings
+#delta_lup=laser_beam_detun16EOM(Xstate_split,rel_detun)# import all the relative detunings
 
 Afield=B_field_grad*1e-2 # [T/m] 
 #Afield=0 #1e-4 # [T] B field constant
-
-t_steps_num=5000 # number of time steps
 
 #vel=c(0,0,0) # [m/s] velocity vector
 
@@ -149,8 +106,10 @@ Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi f
     #rel_detun=(rel_detunMHz+parvals[parcnt])*2*pi*1e6
     #delta_lup=laser_beam_detun12EOM(Xstate_split,rel_detun) # import all the relative detunings
     deltalup_all=array(0,dim=c(12,4,beam_nums)) # create array for storing scattering rates from all beams
+    # NOTICE: deltalup_all is the 3D array of size 12x4xbeam_nums
     # here you can account for the hyperfine splitting in the excited state
     for (q in 1:(beam_nums)){
+      ### TIP: this is the place to introduce hyperfine structure in the excited state!
       deltalup_all[,,q] = cbind(delta_lup[,q],delta_lup[,q],delta_lup[,q],delta_lup[,q])
     }
     # Rlup_all=scattering_rate_matrix_2OMvec(pos,vel,Afield,k_vec,pol_vec,delta_omega,deltalup_all,Rabi_ij) # calculate the t_steps_numing array  
@@ -175,9 +134,7 @@ Rabi_ij=kij*trans_dipole*sqrt(2*Ip/(hbar^2*c_light*eps0)) # calculate the Rabi f
     Nl = sol[max_ind,4:15]
     Nu = sol[max_ind,16:19]
     accelz_store[parcnt] = calc_accel(Nl,Nu,Rlup_all,prefac)
-    # populations
-    Nlpops = sol[,4:15] 
-    Nu = sol[max_ind,16:19]
+
     #pos_final[parcnt] = sol[max_ind,2] # final position
     #vel_final[parcnt] = sol[max_ind,3] # final position
     #gamma_store[parcnt] = sol[max_ind,20] # final scattered photons
@@ -238,20 +195,22 @@ if (plot_populations == T){
     geom_line(aes(y=X7),size=2) + geom_line(aes(y=X8),size=2) + geom_line(aes(y=X9),size=2) + geom_line(aes(y=X10),size=2) + geom_line(aes(y=X11),size=2) + geom_line(aes(y=X12),size=2) +
     geom_line(aes(y=X13),size=2) + geom_line(aes(y=X14),size=2) + geom_line(aes(y=X15),col='blue',size=2) + geom_line(aes(y=X16),col='blue',size=2) + geom_line(aes(y=X17),col='blue',size=2) + geom_line(aes(y=X18),col='blue',size=2) +
     xlab("Time (microsec)") + ylab("Population fraction")
+  
+  # plot scattered photon number
+  gamma_store = data.frame('time_lab'=sol[,1]*1e6,'photons' = sol[,20]) # scattered photons
+  
+  ggplot(gamma_store,aes(time_lab,photons)) + geom_line(size = 2) + xlab("Time (microsec)") + ylab("Scattered photons (#)")
 }
 
 
 
 # ggplot(dftotsum,aes(time_lab)) + geom_line(aes(y=tot_sum))
 
-gamma_store = data.frame('time_lab'=sol[,1]*1e6,'photons' = sol[,20]) # scattered photons
 
-ggplot(gamma_store,aes(time_lab,photons)) + geom_line(size = 2) + xlab("Time (microsec)") + ylab("Scattered photons (#)")
-  
 #}
 
 #plot(parvals,gamma_store,col='blue',lwd=2)
-plot(parvals*1e3,accelz_store*1e-3,col='blue',lwd=2,xlab="Position (mm)",ylab="Acceleration (km/s^2)",xlim=c(0,20))
+plot(parvals*1e3,accelz_store*1e-3,col='blue',lwd=2,xlab="Position (mm)",ylab="Acceleration (km/s^2)")
 abline(h=0,lty=2,lwd=2)
 
 #plot(parvals,pos_final,col='blue',lwd=2)
