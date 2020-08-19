@@ -1,19 +1,19 @@
 # auxilliary function for running the simulations of MOTs
-configure_detunings <- function(freq_number,Xstate_split,rel_detun){
-  if (freq_number == 4){
-    return(laser_beam_detun8(Xstate_split,rel_detun))
-  }else if (freq_number == 5){
-    return(laser_beam_detun10(Xstate_split,rel_detun))
-  }else if (freq_number == 6){
-    return(laser_beam_detun12EOM(Xstate_split,rel_detun))
-  }else if (freq_number == 7){
-    return(laser_beam_detun14EOM(Xstate_split,rel_detun))
-  }else if (freq_number == 8){
-    return(laser_beam_detun16EOM(Xstate_split,rel_detun))
-  }else{
-    return(F)
-  }
-}
+# configure_detunings <- function(freq_number,Xstate_split,rel_detun){
+#   if (freq_number == 4){
+#     return(laser_beam_detun8(Xstate_split,rel_detun))
+#   }else if (freq_number == 5){
+#     return(laser_beam_detun10(Xstate_split,rel_detun))
+#   }else if (freq_number == 6){
+#     return(laser_beam_detun12EOM(Xstate_split,rel_detun))
+#   }else if (freq_number == 7){
+#     return(laser_beam_detun14EOM(Xstate_split,rel_detun))
+#   }else if (freq_number == 8){
+#     return(laser_beam_detun16EOM(Xstate_split,rel_detun))
+#   }else{
+#     return(F)
+#   }
+# }
 
 # functions for SrF calculations
 laser_beam_detun <- function(Xstate_split,rel_detun){
@@ -62,6 +62,21 @@ laser_beam_detun_var12 <- function(Xstate_split,rel_detun){
   delta_lup[,12]=rel_detun[6]+Xstate_split[4]-Xstate_detun
   
   return(delta_lup)
+}
+
+configure_all_detunings <- function(Xstate_split,rel_detun){
+  freq_number = dim(polarization_vector)[1] # extract the number of frequencies
+  Xstate_detun=c(Xstate_split[1],Xstate_split[1],Xstate_split[1],Xstate_split[2],Xstate_split[3],Xstate_split[3],Xstate_split[3],Xstate_split[4],Xstate_split[4],Xstate_split[4],Xstate_split[4],Xstate_split[4])#
+  delta_lup = rep(0,12)
+  for (i in 2:(2*freq_number)) {
+    delta_lup = cbind(delta_lup,rep(0,12))
+  }
+  for (i in 1:freq_number) {
+    delta_lup[,i] = rel_detun[i] - Xstate_detun
+  }
+  for (i in 1:freq_number) {
+    delta_lup[,i+freq_number] = rel_detun[i] - Xstate_detun
+  }
 }
 
 ## for BaH
