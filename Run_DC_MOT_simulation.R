@@ -1,9 +1,11 @@
 # TIP: press Ctrl+Shift+S to run the whole script
+# TIP: to see only the column names and first few rows of a dataframe, use head(DFname), where DFname is the name of the dataframe
 
 # load the needed libraries; install them first if needed
 library(plotly) # dynamic plotting
 library(deSolve) # ODE/PDE solver
 library(ggplot2) # plotting
+library(ggpubr) # package for combining multiple ggplots
 
 # enter simulation parameters
 date2day = '20200813' # todays date
@@ -11,6 +13,7 @@ molecule = 'SrF' # molecule to use: CaH, BaH, SrF, CaF.
 scan_type = 'position' # 'velocity'
 save_results = F # save the data for acceleration vs position or velocity
 plot_results = T # plot the results
+save_plots = T
 plot_populations = T # make sure that the final value for the scan range is set to something suitable for proper population dynamics to occur
 laser_power = 200 # [mW] TOTAL laser power for all beams
 beam_waist=7e-3 # [m] 1/e2 RADIUS of the trapping beams used in the experiment
@@ -21,7 +24,7 @@ source('Load_molecular_params.R')
 source('MOT_auxiliary_functions.R')
 # set simulation parameters 
 t_step=0.01/Gamma_n
-t_steps_num=5000 # number of time steps
+t_steps_num=100 # number of time steps
 
 # specify the polarization vector for the laser frequencies
 
@@ -49,7 +52,7 @@ delta_lup = configure_detunings(freq_number,Xstate_split,rel_detun)
 B_field_grad = 7.5 #[Gauss/cm] gradient of the magnetic field in the xy plane
 
 if (scan_type == 'position'){
-  max_val = 20e-3 # [meters] max value of position
+  max_val = 10e-3 # [meters] max value of position
   step_size = 1e-3 # [meters]
   source('DC_MOT_simulation_position_scan.R')
 }

@@ -21,7 +21,7 @@ for (i in 1:freq_number){ # counter starts from 1 since we are appending to the 
   k_vec = rbind(k_vec,c(0,0,-1)) # initialize
 }
 
-beam_nums=2*freq_number # total number of laser beams involves
+beam_nums=2*freq_number # total number of laser beams involved (freq_numberx2 since beams are from both directions)
 P_laser=rep(laser_power*1e-3/freq_number,freq_number) # [W] laser power per frequency component; notice conversion from mW to W
 
 pol_vec = rbind(polarization_vector,polarization_vector) # to account for the fact that power comes from all sides
@@ -188,30 +188,47 @@ if (save_results == T){
 
 if (plot_populations == T){
   dftot = data.frame('time_lab'=sol[,1]*1e6,sol[,4:19])
-  dftotsum = data.frame('time_lab'=sol[,1],'tot_sum'=apply(sol[,4:19],MARGIN=1,sum))
-  dfexcited = data.frame('time_lab'=sol[,1],sol[,16:19])
+  names(dftot) <- c('time_lab','GS1','GS2','GS3','GS4','GS5','GS6','GS7','GS8','GS9','GS10','GS11','GS12','ES1','ES2','ES3','ES4')
   
-  ggplot(dftot,aes(time_lab)) + geom_line(aes(y=X3),size=2) + geom_line(aes(y=X4),size=2) + geom_line(aes(y=X5),size=2) + geom_line(aes(y=X6),size=2) +
-    geom_line(aes(y=X7),size=2) + geom_line(aes(y=X8),size=2) + geom_line(aes(y=X9),size=2) + geom_line(aes(y=X10),size=2) + geom_line(aes(y=X11),size=2) + geom_line(aes(y=X12),size=2) +
-    geom_line(aes(y=X13),size=2) + geom_line(aes(y=X14),size=2) + geom_line(aes(y=X15),col='blue',size=2) + geom_line(aes(y=X16),col='blue',size=2) + geom_line(aes(y=X17),col='blue',size=2) + geom_line(aes(y=X18),col='blue',size=2) +
+  dftotsum = data.frame('time_lab'=sol[,1]*1e6,'tot_sum'=apply(sol[,4:19],MARGIN=1,sum))
+  # dfexcited = data.frame('time_lab'=sol[,1],sol[,16:19])
+  lwd4plts = 1 # set the plot linewidth
+  pops <- ggplot(dftot,aes(time_lab)) + geom_line(aes(y=GS1),size=lwd4plts) + geom_line(aes(y=GS2),size=lwd4plts) + geom_line(aes(y=GS3),size=lwd4plts) + geom_line(aes(y=GS4),size=lwd4plts) +
+    geom_line(aes(y=GS5),size=lwd4plts) + geom_line(aes(y=GS6),size=lwd4plts) + geom_line(aes(y=GS7),size=lwd4plts) + geom_line(aes(y=GS8),size=lwd4plts) + geom_line(aes(y=GS9),size=lwd4plts) + geom_line(aes(y=GS10),size=lwd4plts) +
+    geom_line(aes(y=GS11),size=lwd4plts) + geom_line(aes(y=GS12),size=lwd4plts) + geom_line(aes(y=ES1),col='blue',size=lwd4plts) + geom_line(aes(y=ES2),col='blue',size=lwd4plts) + geom_line(aes(y=ES3),col='blue',size=lwd4plts) + geom_line(aes(y=ES4),col='blue',size=lwd4plts) +
     xlab("Time (microsec)") + ylab("Population fraction")
   
   # plot scattered photon number
   gamma_store = data.frame('time_lab'=sol[,1]*1e6,'photons' = sol[,20]) # scattered photons
   
-  ggplot(gamma_store,aes(time_lab,photons)) + geom_line(size = 2) + xlab("Time (microsec)") + ylab("Scattered photons (#)")
+  scat_plt <- ggplot(gamma_store,aes(time_lab,photons)) + geom_line(size = 1) + xlab("Time (microsec)") + ylab("Scattered photons (#)")
+  
+  pop_sum <- ggplot(dftotsum,aes(time_lab)) + geom_line(aes(y=tot_sum)) + xlab("Time (microsec)") + ylab("Population sum")
+  
+  dfaccel <- data.frame('pos'=parvals*1e3,'accel'=accelz_store*1e-3)
+  accel_plt <- ggplot(dfaccel,aes(pos,accel)) + geom_point(size = 2) + xlab("Position (mm)") + ylab("Acceleration (km/s^2)")
+  # plot(parvals*1e3,accelz_store*1e-3,col='blue',lwd=2,xlab="Position (mm)",ylab="Acceleration (km/s^2)")
+  # abline(h=0,lty=2,lwd=2)
+  figure <- ggarrange(pops,scat_plt,pop_sum,accel_plt,labels = c("A","B","C","D"),ncol=2, nrow=2)
+  figure
+}else{
+  dfaccel <- data.frame('pos'=parvals*1e3,'accel'=accelz_store*1e-3)
+  accel_plt <- ggplot(dfaccel,aes(pos,accel)) + geom_point(size = 2) + xlab("Position (mm)") + ylab("Acceleration (km/s^2)")
 }
 
+if (save_plots == T){
+  file2save4plts = paste(date2day,'_',molecule,'_',scan_type,'_',laser_power,'mW','_',B_field_grad,'Gpercm_',pol_encode,'.pdf',sep='')
+  ggsave(file2save4plts)
+}
 
-
-# ggplot(dftotsum,aes(time_lab)) + geom_line(aes(y=tot_sum))
+# plot(parvals*1e3,accelz_store*1e-3,col='blue',lwd=2,xlab="Position (mm)",ylab="Acceleration (km/s^2)")
+# abline(h=0,lty=2,lwd=2)
 
 
 #}
 
 #plot(parvals,gamma_store,col='blue',lwd=2)
-plot(parvals*1e3,accelz_store*1e-3,col='blue',lwd=2,xlab="Position (mm)",ylab="Acceleration (km/s^2)")
-abline(h=0,lty=2,lwd=2)
+
 
 #plot(parvals,pos_final,col='blue',lwd=2)
 #plot(parvals,vel_final,col='green',type='l',lwd=2)
