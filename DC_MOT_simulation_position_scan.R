@@ -211,9 +211,10 @@ if (plot_populations == T){
   # abline(h=0,lty=2,lwd=2)
   figure <- ggarrange(pops,scat_plt,pop_sum,accel_plt,labels = c("A","B","C","D"),ncol=2, nrow=2)
   figure
+  print('plotting stuff maybe...')
 }else{
   dfaccel <- data.frame('pos'=parvals*1e3,'accel'=accelz_store*1e-3)
-  accel_plt <- ggplot(dfaccel,aes(pos,accel)) + geom_point(size = 2) + xlab("Position (mm)") + ylab("Acceleration (km/s^2)")
+  ggplot(dfaccel,aes(pos,accel)) + geom_point(size = 2) + xlab("Position (mm)") + ylab("Acceleration (km/s^2)")
 }
 
 if (save_plots == T){
